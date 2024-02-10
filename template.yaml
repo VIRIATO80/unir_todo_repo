@@ -22,7 +22,7 @@ Globals:
     Timeout: 3
     Environment:
       Variables:
-        DYNAMODB_TABLE: !If [TableExists, !Ref TodosDynamoDbTable, !Ref "AWS::NoValue"]
+        DYNAMODB_TABLE: !Ref TodosDynamoDbTable
         ENDPOINT_OVERRIDE: ""
     
 Resources:
@@ -95,7 +95,6 @@ Resources:
             
   TodosDynamoDbTable:
     Type: AWS::DynamoDB::Table
-    Condition: TableDoesNotExist
     Properties: 
       TableName: !Sub "${Stage}-TodosDynamoDbTable"
       AttributeDefinitions: 
@@ -108,11 +107,6 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
-Conditions:
-  TableDoesNotExist: !Not
-    - Fn::Equals:
-        - !Ref TodosDynamoDbTable
-        - ""
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -136,3 +130,4 @@ Outputs:
   DeleteTodoApi:
     Description: "API Gateway endpoint URL for ${opt:stage} stage for Delete TODO"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos/{id}"
+
