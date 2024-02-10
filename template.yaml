@@ -16,6 +16,10 @@ Parameters:
       - production
     Description: Enter staging or production. Default is default  
 
+Conditions:
+  TableDoesNotExist:
+    !Not [!Equals [!Ref TodosDynamoDbTable, ""]]
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -95,6 +99,7 @@ Resources:
             
   TodosDynamoDbTable:
     Type: AWS::DynamoDB::Table
+    Condition: TableDoesNotExist
     Properties: 
       TableName: !Sub "${Stage}-TodosDynamoDbTable"
       AttributeDefinitions: 
