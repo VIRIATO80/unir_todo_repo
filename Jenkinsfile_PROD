@@ -1,0 +1,53 @@
+pipeline {
+     agent any
+     stages {
+         
+        stage('Get Code') {
+            steps {
+                // Obtener código del repo de la rama develop
+                git branch: 'master', url: 'https://github.com/VIRIATO80/unir_todo_repo.git'
+            }
+        }         
+         
+        stage('Prepare environment') {
+            steps {
+                sh 'bash ./pipelines/PIPELINE-FULL-PRODUCTION/setup.sh'
+            }
+        }         
+         
+        stage('SAM Deploy'){
+            steps{
+                echo 'Initiating Deployment'
+                sh '''
+                        sam deploy \\
+                            --force-upload \\
+                            --stack-name todo-list-aws-production \\
+                            --region us-east-1 \\
+                            --resolve-s3 \\
+                            --config-env production \\
+                            --no-fail-on-empty-changeset \\
+                            --capabilities CAPABILITY_IAM \\
+                            --no-confirm-changeset \\
+                    '''
+            }
+        }        
+
+        stage('Integration Tests'){
+            steps{
+                script {
+                def BASE_URI = sh(script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text", returnStdout: true).trim()
+                echo 'Initiating Integration Tests'
+                
+                // Ejecutar pytest de Python
+                sh """
+                    . todo-list-aws/bin/activate
+                    export BASE_URI=$BASE_URI
+                    pytest -m readonly -s test/integration/todoApiTest.py
+                """
+                }
+            }
+        }
+        
+     }
+    
+}
