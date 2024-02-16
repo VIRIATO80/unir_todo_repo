@@ -11,7 +11,9 @@ pipeline {
          
         stage('Prepare environment') {
             steps {
-                sh 'bash ./pipelines/PIPELINE-FULL-PRODUCTION/setup.sh'
+                withPythonEnv('/usr/bin/python3.10') {
+                    sh 'bash ./pipelines/PIPELINE-FULL-PRODUCTION/setup.sh'
+                }
             }
         }         
          
@@ -34,16 +36,18 @@ pipeline {
 
         stage('Integration Tests'){
             steps{
-                script {
-                def BASE_URI = sh(script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text", returnStdout: true).trim()
-                echo 'Initiating Integration Tests'
-                
-                // Ejecutar pytest de Python
-                sh """
-                    . todo-list-aws/bin/activate
-                    export BASE_URI=$BASE_URI
-                    pytest -m readonly -s test/integration/todoApiTest.py
-                """
+                withPythonEnv('/usr/bin/python3.10') {
+                    script {
+                        def BASE_URI = sh(script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text", returnStdout: true).trim()
+                        echo 'Initiating Integration Tests'
+                        
+                        // Ejecutar pytest de Python
+                        sh """
+                            . todo-list-aws/bin/activate
+                            export BASE_URI=$BASE_URI
+                            pytest -m readonly -s test/integration/todoApiTest.py
+                        """
+                    }
                 }
             }
         }
